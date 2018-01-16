@@ -1,7 +1,7 @@
 /**
  * @name jquery.Thailand.js
- * @version 1.5.0
- * @update Apr 20, 2017
+ * @version 1.5.3
+ * @update Dec 20, 2017
  * @website https://github.com/earthchie/jquery.Thailand.js
  * @license WTFPL v.2 - http://www.wtfpl.net/
  *
@@ -14,63 +14,38 @@
 $.Thailand = function (options) {
     'use strict';
 
-    options = $.extend({
-
-        database: '../database/db.json',
-        database_type: 'auto', // json or zip; any other value will be ignored and script will attempt to evaluate the type from file extension instead.
-        zip_worker_path: false, // path to zip worker folder e.g. './jquery.Thailand.js/dependencies/zip.js/'; Leave it to false unless you found any error.
-        autocomplete_size: 20,
-
-        onLoad: function () {},
-        onDataFill: function () {},
-
-        $district: false,
-        $district_code: false, // geodb only
-        $amphoe: false,
-        $amphoe_code: false, // geodb only
-        $province: false,
-        $province_code: false, // geodb only
-        $zipcode: false,
-        $search: false
-
-    }, options);
+    options = $.extend({}, $.Thailand.defaults, options);
 
     var preprocess = function (data) {
             var lookup = [],
                 words = [],
                 expanded = [],
-                useLookup = false,
                 t;
 
             if (data.lookup && data.words) {
                 // compact with dictionary and lookup
-                useLookup = true;
                 lookup = data.lookup.split('|');
                 words = data.words.split('|');
                 data = data.data;
             }
 
             t = function (text) {
+                
                 function repl(m) {
                     var ch = m.charCodeAt(0);
                     return words[ch < 97 ? ch - 65 : 26 + ch - 97];
                 }
-                if (!useLookup) {
-                    return text;
-                }
+                
                 if (typeof text === 'number') {
                     text = lookup[text];
                 }
                 return text.replace(/[A-Z]/ig, repl);
             };
 
-            if (!data[0].length) {
-                // non-compacted database
-                return data;
-            }
             // decompacted database in hierarchical form of:
             // [["province",[["amphur",[["district",["zip"...]]...]]...]]...]
             data.map(function (provinces) {
+
                 var i = 1;
                 if(provinces.length === 3){ // geographic database
                     i = 2;
@@ -95,6 +70,7 @@ $.Thailand = function (options) {
                         });
                     });
                 });
+
             });
             return expanded;
         },
@@ -158,7 +134,7 @@ $.Thailand = function (options) {
                 xhr;
 
             if (type !== 'json' && type !== 'zip') {
-                type = options.database.split('.').pop(); // attempt to use file extension instead
+                type = options.database.split('.').pop(); // attempt to figure from file extension instead
             }
 
             switch (type) {
@@ -219,6 +195,7 @@ $.Thailand = function (options) {
 
     // get database
     loadDB(function (DB) {
+        $.Thailand.DB = DB;
         var i,
             key,
             templates = { // template of autocomplete choices
@@ -285,18 +262,17 @@ $.Thailand = function (options) {
                         i;
                     try {
                         possibles = new JQL(possibles
-                            .concat(DB.select('*').where('district').match(str).fetch())
-                            .concat(DB.select('*').where('amphoe').match(str).fetch())
-                            .concat(DB.select('*').where('province').match(str).fetch())
                             .concat(DB.select('*').where('zipcode').match(str).fetch())
-                            .filter(function (self, index, parent) { // remove duplicated data
-                                for (i = 0; i < parent.length; i = i + 1) {
-                                    if (index !== i && parent[i].amphoe === self.amphoe && parent[i].district === self.district) {
-                                        return false;
-                                    }
-                                }
-                                return true;
+                            .concat(DB.select('*').where('province').match(str).fetch())
+                            .concat(DB.select('*').where('amphoe').match(str).fetch())
+                            .concat(DB.select('*').where('district').match(str).fetch())
+                            .map(function(item){
+                                return JSON.stringify(item);
+                            }).filter(function(item, pos, self){
+                                return self.indexOf(item) == pos;
                             }).map(function (self) { // give a likely score, will use to sort data later
+
+                                self = JSON.parse(self);
                                 self.likely = [
                                     similar_text(str, self.district) * 5,
                                     similar_text(str, self.amphoe.replace(/^เมือง/, '')) * 3,
@@ -305,7 +281,9 @@ $.Thailand = function (options) {
                                 ].reduce(function (a, b) {
                                     return Math.max(a, b);
                                 });
+
                                 return self;
+
                             })).select('*').orderBy('likely desc').fetch();
                     } catch (e) {}
 
@@ -342,4 +320,26 @@ $.Thailand = function (options) {
         }
 
     });
+};
+$.Thailand.defaults = {
+    database: 'https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/database/db.json',
+    database_type: 'auto', // json or zip; any other value will be ignored and script will attempt to evaluate the type from file extension instead.
+    zip_worker_path: false, // path to zip worker folder e.g. './jquery.Thailand.js/dependencies/zip.js/'; Leave it to false unless you found any error.
+    autocomplete_size: 20,
+
+    onLoad: function () {},
+    onDataFill: function () {},
+
+    $district: false,
+    $district_code: false, // geodb only
+    $amphoe: false,
+    $amphoe_code: false, // geodb only
+    $province: false,
+    $province_code: false, // geodb only
+    $zipcode: false,
+    $search: false
+};
+
+$.Thailand.setup = function(options){
+    $.extend($.Thailand.defaults, options);
 };

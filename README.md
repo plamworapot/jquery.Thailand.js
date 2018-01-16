@@ -6,9 +6,20 @@
 
 อ่านแนวคิด และที่มาที่ไปได้ที่นี่ [ระบบ Auto Complete ที่อยู่ไทย อย่างที่มันควรเป็น](https://medium.com/@earthchie/ระบบ-auto-complete-ที่อยู่ไทย-อย่างที่มันควรเป็น-27360185d86a)
 
-## Changelogs 1.5.0
+## Changelog [1.5.3]
+> 20 ธันวาคม 2017
 
-- รองรับฐานข้อมูลชนิดใหม่ geodb โดย geodb คือฐานข้อมูลที่เพิ่มข้อมูล area code เข้ามา สำหรับงานที่จำเป็นต้องใช้งานด้านแผนที่ [#4](https://github.com/earthchie/jquery.Thailand.js/issues/4)
+- **Update** ปรับปรุงรหัสไปรษณีย์ อ.แก่งหางแมว จ. จันทบุรี เป็น 22160
+- **Update** ปรับปรุงรหัสไปรษณีย์ อ.วังเจ้า จ.ตาก เป็น 63180
+- **Update** ปรับปรุงรหัสไปรษณีย์ อ.บางเสาธง จ.สมุทรปราการ เป็น 10570
+- **Update** ย้าย ต.ท่าแฝก จ.อุตรดิตถ์ ออกจากอ.ท่าปลา ไปอยู่ อ.น้ำปาด
+- **Enhancement** กำหนดฐานข้อมูลให้อ่านไฟล์จาก GitHub CDN เป็นค่า default ทำให้ไม่จำเป็นต้องโฮสไฟล์ฐานข้อมูลเอง
+- **Enhancement** ลบโค้ดที่ไม่จำเป็นทิ้ง
+- **Enhancement** เปลี่ยนชื่อไฟล์ ``/database/raw_database/database.xls`` เป็น ``/database/raw_database/original_database_from_thaipost.xls``
+- **Enhancement** เปลี่ยนชื่อไฟล์ ``/database/raw_database/database.json`` เป็น ``/database/raw_database/raw_database.json``
+- **Add** เพิ่มเครื่องมือ build ฐานข้อมูลแบบ web-based
+
+[1.5.3]: https://github.com/earthchie/jquery.Thailand.js/commit/5254a5e5745f25d93369f3085560fe6e7cb2a179
 
 อ่านทั้งหมดได้ที่ [CHANGELOG.md](https://github.com/earthchie/jquery.Thailand.js/blob/master/CHANGELOG.md)
 
@@ -16,6 +27,8 @@
 - [x] Clean up repo
 - [x] Need help! with database [#4](https://github.com/earthchie/jquery.Thailand.js/issues/4)
 - [ ] Need Tester on geodb data [#4](https://github.com/earthchie/jquery.Thailand.js/issues/4)
+- [ ] Drop support for zip file, will use GZIP CDN instead.
+- [ ] English language database
 
 # วิธีใช้
 
@@ -51,7 +64,6 @@
 ```javascript
 
 $.Thailand({
-    database: './jquery.Thailand.js/database/db.json', // path หรือ url ไปยัง database
     $district: $('#district'), // input ของตำบล
     $amphoe: $('#amphoe'), // input ของอำเภอ
     $province: $('#province'), // input ของจังหวัด
@@ -59,6 +71,8 @@ $.Thailand({
 });
 
 ```
+
+ใน version 1.5.3 เป็นต้นมา คุณไม่จำเป็นต้องระบุฐานข้อมูล ตัว lib จะทำการเรียกใช้ฐานข้อมูลจาก GitHub CDN ให้อัตโนมัติ
 
 # วิธีใช้อย่างละเอียด
 
@@ -145,6 +159,29 @@ $.Thailand({
 
 ```
 
+หรือใช้งาน ``$.Thailand.setup()`` เพื่อกำหนดค่า default จะได้ไม่ต้องกำหนดค่าเดิมใหม่ซ้ำๆ ทุกครั้ง เช่น
+```javascript
+    $.Thailand.setup({
+        database: './jquery.Thailand.js/database/db.json'
+    });
+
+    // ไม่ต้องกำหนด path ของ database ซ้ำ
+    $.Thailand({
+        $search: $('#demo1 [name="search"]'),
+        onDataFill: function(data){
+            console.log(data)
+        }
+    });
+
+    // ไม่ต้องกำหนด path ของ database ซ้ำเช่นกัน
+    $.Thailand({
+        $search: $('#demo2 [name="search"]'),
+        onDataFill: function(data){
+            console.log(data)
+        }
+    });
+```
+
 ## หากคุณเลือกใช้ฐานข้อมูลชนิด ZIP
 ใช้งานแทบจะเหมือนกับแบบ ``json`` ทุกประการ เว้นแต่ว่าต้องติดตั้ง dependencies เพิ่ม คือ ``zip.js``
 
@@ -197,7 +234,6 @@ $.Thailand({
 
 ```javascript
 $.Thailand({ 
-    database: './jquery.Thailand.js/database/db.json', // path หรือ url ไปยัง database
     $search: $('#search'), // input ของช่องค้นหา
     onDataFill: function(data){ // callback เมื่อเกิดการ auto complete ขึ้น
         console.log(data);
@@ -339,6 +375,9 @@ $.Thailand({
 คือ path ที่เก็บไฟล์ ``z-worker.js`` และ ``inflate.js`` โดยปกติไม่จำเป็นต้องยุ่งกับค่านี้เลย ระบบจะ detect เอาเอง
 เว้นแต่ว่าจะพบ error แจ้งว่าหาไฟล์ ``z-worker.js`` และ ``inflate.js`` ไม่เจอ (ซึ่งไม่น่าเกิดขึ้นได้ เว้นแต่จะแยกไฟล์ ``zip.js`` ออกไปไว้คนละที่กัน)
 ถ้ามันแจ้ง error ว่าหาไฟล์ไม่เจอ ก็ค่อยให้ระบุค่าลงไป เช่น ``zip_worker_path: "./jquery.Thailand.js/dependencies/zip.js/",``
+
+## ต้องการปรับปรุงฐานข้อมูล?
+คุณสามารถปรับปรุงข้อมูลได้ที่ [raw_database.json](https://github.com/earthchie/jquery.Thailand.js/blob/master/jquery.Thailand.js/database/raw_database/raw_database.json) จากนั้นนำไฟล์ที่แก้ไขแล้ว ไป compact ให้มีขนาดเล็กลงเพื่อให้นำไปใช้กับ Libary ได้ที่ [Database Tools](https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/database/tools/)
 
 ## Contributers
 [earthchie](https://github.com/earthchie/) - Project Owner
